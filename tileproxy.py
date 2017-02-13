@@ -11,6 +11,7 @@ from sqlalchemy.orm import load_only
 from PIL import Image
 from cStringIO import StringIO
 import json
+import math
 import mercantile
 import requests
 import uuid
@@ -92,7 +93,10 @@ def get_tile(layer, zoom, x, y):
 
 
 def scale_to_zoom(scale):
-    return None
+    if not scale:
+        return None
+
+    return int(round(-1.443 * math.log(scale) + 29.14))
 
 
 def build_esri_source(name, url):
@@ -174,8 +178,8 @@ def build_esri_source(name, url):
         name=name,
         url_template=url_template,
         bbox=bbox,
-        min_zoom=scale_to_zoom(metadata.get('min_scale')) or 0,
-        max_zoom=scale_to_zoom(metadata.get('max_scale')) or 22,
+        min_zoom=scale_to_zoom(metadata.get('minScale')) or 0,
+        max_zoom=scale_to_zoom(metadata.get('maxScale')) or 22,
     )
 
     return source
