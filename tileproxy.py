@@ -7,10 +7,10 @@ from flask import Flask, abort, flash, jsonify, render_template, send_file
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from shapely.geometry import mapping
-from pyproj import Proj, transform
 from sqlalchemy.orm import load_only
 from PIL import Image
 from cStringIO import StringIO
+import json
 import mercantile
 import requests
 import uuid
@@ -147,23 +147,26 @@ def build_esri_source(name, url):
 
     extent = metadata.get('fullExtent')
     extent_sr = extent.get('spatialReference')
-    from_srid = extent_sr.get('latestWkid') or extent_sr.get('wkid')
-    if from_srid:
-        if from_srid == 102100:
-            # Alias the Esri SRS to one that proj4 knows about
-            from_srid = 3857
-        from_sr = Proj(init='epsg:{}'.format(from_srid))
-    else:
-        from_sr = Proj(extent_sr.get('wkt'), preserve_units=True)
-    to_sr = Proj(init='epsg:4326')
-    (xmin2, ymin2) = transform(from_sr, to_sr, extent.get('xmin'), extent.get('ymin'))
-    (xmax2, ymax2) = transform(from_sr, to_sr, extent.get('xmax'), extent.get('ymax'))
+    from_sr = extent_sr.get('wkid') or extent_sr.get('wkt')
+    proj_params = {
+        'f': 'json',
+        'inSR': from_sr,
+        'outSR': '4326',
+        'geometries': json.dumps({
+            'geometryType': 'esriGeometryEnvelope',
+            'geometries': [extent],
+        })
+    }
+    resp = requests.get('http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer/project', params=proj_params)
+    if resp.status_code != 200:
+        raise ValueError("Couldn't project layer bounding box")
+    print resp.request.url
+    if resp.json().get('error'):
+        raise ValueError("Problem projecting bounding box: {}".format(resp.json().get('error')))
+    projected = resp.json()['geometries'][0]
     bbox = ('SRID=4326;POLYGON(({xmin} {ymin}, {xmin} {ymax}, '
             '{xmax} {ymax}, {xmax} {ymin}, {xmin} {ymin}))'.format(
-                xmin=xmin2,
-                ymin=ymin2,
-                xmax=xmax2,
-                ymax=ymax2,
+                **projected
             ))
 
     source = Source(
