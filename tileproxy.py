@@ -80,7 +80,6 @@ def get_tile(layer, zoom, x, y):
 
     composite = Image.new('RGBA', (256, 256))
     for source in sources:
-        print source.name
         url = source.url_template.format(
             xmin=min_lon,
             ymin=min_lat,
