@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>{{ source.name }}</h1>
+    <p>Slug: {{ source.slug }}</p>
+    <p>URL Template: {{ source.url_template }}</p>
+    <p>Min zoom: {{ source.min_zoom }}, Max zoom: {{ source.max_zoom }}</p>
+    <div id="map" style="width:700px; height: 500px"></div>
+    <script type="text/javascript">
+        var map = L.map('map', {
+            maxZoom: 22
+        });
+        var boundsLayer = new L.GeoJSON.AJAX(
+            "{{ url_for('show_source_geojson', slug=source.slug) }}",
+            {
+                style: {
+                    fill: null
+                },
+                maxZoom: {{ source.max_zoom }}
+            });
+        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
+        var tileProxyLayer = L.tileLayer('/v1/tiles/{{ source.slug }}/{z}/{x}/{y}.png').addTo(map);
+        boundsLayer.on('data:loaded', function() {
+            map.fitBounds(boundsLayer.getBounds());
+            map.addLayer(boundsLayer);
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Global Map</h1>
+    <div id="map" style="width:700px; height: 500px"></div>
+    <script type="text/javascript">
+        var map = L.map('map', {
+            maxZoom: 22
+        }).setView([37.649, -79.563], 8);
+        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
+        var tileProxyLayer = L.tileLayer('/v1/tiles/global/{z}/{x}/{y}.png').addTo(map);
+    </script>
+{% endblock %}
