@@ -93,8 +93,9 @@ def get_tile(layer, zoom, x, y):
         resp.raise_for_status()
         content = StringIO(resp.content)
         image = Image.open(content)
+        image = image.convert('RGBA')
         # See http://stackoverflow.com/a/5324782
-        composite.paste(image, (0, 0), image)
+        composite = Image.alpha_composite(composite, image)
 
     out_buff = StringIO()
     composite.save(out_buff, 'PNG', quality=70)
