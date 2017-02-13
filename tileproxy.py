@@ -163,7 +163,7 @@ def build_esri_source(name, url):
 
     extent = metadata.get('fullExtent')
     extent_sr = extent.get('spatialReference')
-    from_sr = extent_sr.get('wkid') or extent_sr.get('wkt')
+    from_sr = extent_sr.get('latestWkid') or extent_sr.get('wkid') or extent_sr.get('wkt')
     proj_params = {
         'f': 'json',
         'inSR': from_sr,
