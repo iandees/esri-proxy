@@ -150,6 +150,7 @@ def build_esri_source(name, url):
     from_srid = extent_sr.get('latestWkid') or extent_sr.get('wkid')
     if from_srid:
         if from_srid == 102100:
+            # Alias the Esri SRS to one that proj4 knows about
             from_srid = 3857
         from_sr = Proj(init='epsg:{}'.format(from_srid))
     else:
