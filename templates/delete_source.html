@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>{{ source.name }}</h1>
+    <p>Are you sure?</p>
+    <p><a href="{{ url_for('delete_source', slug=source.slug, for_real='true') }}">Yes, Really</a>, <a href="{{ url_for('show_source', slug=source.slug) }}">Nevermind</a></p>
+{% endblock %}

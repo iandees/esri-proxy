@@ -3,7 +3,17 @@ from flask_migrate import Migrate
 from flask_wtf import FlaskForm
 from wtforms import StringField
 from wtforms.validators import DataRequired
-from flask import Flask, abort, flash, jsonify, render_template, send_file
+from flask import (
+    Flask,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for
+)
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from shapely.geometry import mapping
@@ -225,6 +235,22 @@ def show_source(slug):
         'show_source.html',
         source=source,
         esri_form=esri_form,
+    )
+
+
+@app.route('/sources/<slug>/delete')
+def delete_source(slug):
+    source = Source.query.filter_by(slug=slug).first_or_404()
+
+    if request.args.get('for_real') == 'true':
+        db.session.delete(source)
+        db.session.commit()
+        flash("Deleted source {}".format(source.name))
+        return redirect(url_for('show_sources'))
+
+    return render_template(
+        'delete_source.html',
+        source=source,
     )
 
 
