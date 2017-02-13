@@ -110,6 +110,7 @@ def scale_to_zoom(scale):
 
 
 def build_esri_source(name, url):
+    url = url.rstrip('/')
     url_parts = urlparse.urlparse(url)
     proxy_parts = None
     if url_parts.query:
