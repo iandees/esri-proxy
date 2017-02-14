@@ -51,8 +51,8 @@ class NewEsriSourceForm(FlaskForm):
     url = StringField('url', validators=[DataRequired()])
 
 
-@app.route('/v1/tiles/<layer>/<int:zoom>/<int:x>/<int:y>.png')
-def get_tile(layer, zoom, x, y):
+@app.route('/v1/tiles/<layer>/<int:zoom>/<int:x>/<int:y>.<fmt>')
+def get_tile(layer, zoom, x, y, fmt):
     (min_lon, min_lat, max_lon, max_lat) = mercantile.bounds(x, y, zoom)
 
     sources = Source.query.options(load_only(Source.url_template)).filter(
@@ -97,10 +97,15 @@ def get_tile(layer, zoom, x, y):
         composite = Image.alpha_composite(composite, image)
 
     out_buff = StringIO()
-    composite.save(out_buff, 'PNG', quality=70)
+    if fmt in ('jpeg', 'jpg'):
+        composite.save(out_buff, 'jpeg', quality=35)
+        mimetype = 'image/jpeg'
+    elif fmt in ('png',):
+        composite.save(out_buff, 'png', optimize=True)
+        mimetype = 'image/png'
     out_buff.seek(0)
 
-    return send_file(out_buff, mimetype='image/png')
+    return send_file(out_buff, mimetype=mimetype)
 
 
 def scale_to_zoom(scale):
