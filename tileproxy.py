@@ -27,6 +27,7 @@ import mercantile
 import requests
 import uuid
 import urlparse
+import urllib
 
 
 app = Flask(__name__)
@@ -129,14 +130,27 @@ def build_esri_source(name, url):
     else:
         service_parts = url_parts
 
-    if service_parts.path.rstrip('/').rsplit('/', 1) not in ('MapServer', 'ImageServer'):
+    service_type = service_parts.path.rstrip('/').rsplit('/', 1)[-1]
+    if service_type not in ('MapServer', 'ImageServer'):
         raise ValueError("The layer doesn't seem to be a MapServer or ImageServer")
 
+    # Try detecting the auth token
+    query_obj = {'f': 'json'}
+    token = None
+    if service_parts.query:
+        service_qs = urlparse.parse_qs(service_parts.query)
+        token = service_qs.get('token')
+        if token:
+            query_obj['token'] = token[0]
+            token = token[0]
+
+    query_str = urllib.urlencode(query_obj)
+
     if proxy_parts:
-        proxied_metadata = urlparse.urlunparse(service_parts._replace(query='f=json'))
+        proxied_metadata = urlparse.urlunparse(service_parts._replace(query=query_str))
         metadata_parts = url_parts._replace(query=proxied_metadata)
     else:
-        metadata_parts = url_parts._replace(query='f=json')
+        metadata_parts = url_parts._replace(query=query_str)
     metadata_url = urlparse.urlunparse(metadata_parts)
     resp = requests.get(metadata_url)
 
@@ -147,7 +161,7 @@ def build_esri_source(name, url):
     slug = str(uuid.uuid4())[:8]
 
     capabilities = metadata.get('capabilities')
-    if url.endswith('ImageServer'):
+    if service_type == 'ImageServer':
         if 'Image' not in capabilities:
             raise ValueError("The layer doesn't seem to support image export")
 
@@ -158,7 +172,7 @@ def build_esri_source(name, url):
                 '&format=png&f=image'
             )
         ])
-    elif url.endswith('MapServer'):
+    elif service_type == 'MapServer':
         if 'Map' not in capabilities:
             raise ValueError("The layer doesn't seem to support map export")
 
@@ -169,6 +183,9 @@ def build_esri_source(name, url):
                 '&format=png&f=image'
             )
         ])
+
+    if token:
+        url_template += '&token={}'.format(token)
 
     extent = metadata.get('fullExtent')
     extent_sr = extent.get('spatialReference')
@@ -185,7 +202,7 @@ def build_esri_source(name, url):
     resp = requests.get('http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer/project', params=proj_params)
     if resp.status_code != 200:
         raise ValueError("Couldn't project layer bounding box")
-    print resp.request.url
+
     if resp.json().get('error'):
         raise ValueError("Problem projecting bounding box: {}".format(resp.json().get('error')))
     projected = resp.json()['geometries'][0]
