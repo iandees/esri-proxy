@@ -1,5 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
+from flask_cache import Cache
 from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import StringField
 from wtforms.validators import DataRequired
@@ -30,6 +31,7 @@ import urlparse
 
 app = Flask(__name__)
 app.config.from_object('config')
+cache = Cache(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
@@ -52,6 +54,7 @@ class NewEsriSourceForm(FlaskForm):
 
 
 @app.route('/v1/tiles/<layer>/<int:zoom>/<int:x>/<int:y>.<fmt>')
+@cache.cached()
 def get_tile(layer, zoom, x, y, fmt):
     (min_lon, min_lat, max_lon, max_lat) = mercantile.bounds(x, y, zoom)
 
