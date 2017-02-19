@@ -121,14 +121,15 @@ def scale_to_zoom(scale):
 def build_esri_source(name, url):
     url = url.rstrip('/')
     url_parts = urlparse.urlparse(url)
+    query_url_parts = urlparse.urlparse(url_parts.query)
     proxy_parts = None
-    if url_parts.query:
-        service_parts = urlparse.urlparse(url_parts.query)
+    if query_url_parts.scheme:
+        service_parts = query_url_parts
         proxy_parts = url_parts
     else:
         service_parts = url_parts
 
-    if service_parts.path.rsplit('/')[-1] not in ('MapServer', 'ImageServer'):
+    if service_parts.path.rstrip('/').rsplit('/', 1) not in ('MapServer', 'ImageServer'):
         raise ValueError("The layer doesn't seem to be a MapServer or ImageServer")
 
     if proxy_parts:
