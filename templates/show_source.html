@@ -3,8 +3,10 @@
     <h1>{{ source.name }}</h1>
     <p><a href="{{ url_for('delete_source', slug=source.slug) }}">Delete</a></p>
     <p>Slug: {{ source.slug }}</p>
-    <p>URL Template: {{ source.url_template }}</p>
+    <p>Source URL: {{ source.url_template }}</p>
     <p>Min zoom: {{ source.min_zoom }}, Max zoom: {{ source.max_zoom }}</p>
+    <p>JOSM url template: <code>tms[{{ source.min_zoom }},{{ source.max_zoom }}]:{{ url_for('get_tile', layer=source.slug, zoom=555, x=444, y=333, fmt='png', _external=True).replace('555', '{zoom}').replace('444', '{x}').replace('333', '{y}') }}</code></p>
+    <p>iD url template: <code>{{ url_for('get_tile', layer=source.slug, zoom=555, x=444, y=333, fmt='png', _external=True).replace('555', '{zoom}').replace('444', '{x}').replace('333', '{y}') }}</code></p>
     <div id="map" style="width:700px; height: 500px"></div>
     <script type="text/javascript">
         var map = L.map('map', {
