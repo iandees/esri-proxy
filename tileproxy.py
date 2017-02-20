@@ -107,6 +107,8 @@ def get_tile(layer, zoom, x, y, fmt):
     elif fmt in ('png',):
         composite.save(out_buff, 'png', optimize=True)
         mimetype = 'image/png'
+    else:
+        abort(404, 'Unknown format specified')
     out_buff.seek(0)
 
     return send_file(out_buff, mimetype=mimetype)
