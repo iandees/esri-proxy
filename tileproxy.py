@@ -54,7 +54,7 @@ class NewEsriSourceForm(FlaskForm):
 
 
 @app.route('/v1/tiles/<layer>/<int:zoom>/<int:x>/<int:y>.<fmt>')
-@cache.cached()
+@cache.cached(300)
 def get_tile(layer, zoom, x, y, fmt):
     (min_lon, min_lat, max_lon, max_lat) = mercantile.bounds(x, y, zoom)
 
