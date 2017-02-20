@@ -2,7 +2,7 @@ alembic==0.8.10
 appdirs==1.4.0
 click==6.7
 Flask==0.12
-Flask-Cache==0.13.1
+Flask-Caching==1.2.0
 Flask-Migrate==2.0.3
 Flask-Script==2.0.5
 Flask-SQLAlchemy==2.1
