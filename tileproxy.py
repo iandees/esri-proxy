@@ -120,7 +120,6 @@ def scale_to_zoom(scale):
 
 
 def build_esri_source(name, url):
-    url = url.rstrip('/')
     url_parts = urlparse.urlparse(url)
     query_url_parts = urlparse.urlparse(url_parts.query)
     proxy_parts = None
@@ -134,23 +133,11 @@ def build_esri_source(name, url):
     if service_type not in ('MapServer', 'ImageServer'):
         raise ValueError("The layer doesn't seem to be a MapServer or ImageServer")
 
-    # Try detecting the auth token
-    query_obj = {'f': 'json'}
-    token = None
-    if service_parts.query:
-        service_qs = urlparse.parse_qs(service_parts.query)
-        token = service_qs.get('token')
-        if token:
-            query_obj['token'] = token[0]
-            token = token[0]
-
-    query_str = urllib.urlencode(query_obj)
-
     if proxy_parts:
-        proxied_metadata = urlparse.urlunparse(service_parts._replace(query=query_str))
+        proxied_metadata = urlparse.urlunparse(service_parts._replace(query='f=json'))
         metadata_parts = url_parts._replace(query=proxied_metadata)
     else:
-        metadata_parts = url_parts._replace(query=query_str)
+        metadata_parts = url_parts._replace(query='f=json')
     metadata_url = urlparse.urlunparse(metadata_parts)
     resp = requests.get(metadata_url)
 
@@ -158,34 +145,26 @@ def build_esri_source(name, url):
         raise ValueError("Error retrieving layer metadata from " + resp.request.url)
 
     metadata = resp.json()
-    slug = str(uuid.uuid4())[:8]
 
+    base_url = urlparse.urlunparse(service_parts)
     capabilities = metadata.get('capabilities')
     if service_type == 'ImageServer':
         if 'Image' not in capabilities:
             raise ValueError("The layer doesn't seem to support image export")
 
-        url_template = ''.join([url,
-            ('/exportImage?bbox={xmin},{ymin},{xmax},{ymax}'
-                '&bboxSR=4326&size={width},{height}'
-                '&imageSR=102113&transparent=true'
-                '&format=png&f=image'
-            )
-        ])
+        url_template = base_url + '/exportImage'
     elif service_type == 'MapServer':
         if 'Map' not in capabilities:
             raise ValueError("The layer doesn't seem to support map export")
 
-        url_template = ''.join([url,
-            ('/export?bbox={xmin},{ymin},{xmax},{ymax}'
-                '&bboxSR=4326&size={width},{height}'
-                '&imageSR=102113&transparent=true'
-                '&format=png&f=image'
-            )
-        ])
+        url_template = base_url + '/export'
 
-    if token:
-        url_template += '&token={}'.format(token)
+    url_template = url_template + (
+        '?bbox={xmin},{ymin},{xmax},{ymax}'
+        '&bboxSR=4326&size={width},{height}'
+        '&imageSR=102113&transparent=true'
+        '&format=png&f=image'
+    )
 
     extent = metadata.get('fullExtent')
     extent_sr = extent.get('spatialReference')
@@ -211,6 +190,7 @@ def build_esri_source(name, url):
                 **projected
             ))
 
+    slug = str(uuid.uuid4())[:8]
     source = Source(
         slug=slug,
         name=name,
