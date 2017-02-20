@@ -134,11 +134,11 @@ def build_esri_source(name, url):
         raise ValueError("The layer doesn't seem to be a MapServer or ImageServer")
 
     if proxy_parts:
-        proxied_metadata = urlparse.urlunparse(service_parts._replace(query='f=json'))
-        metadata_parts = url_parts._replace(query=proxied_metadata)
+        proxied_metadata = urlparse.urlunparse(service_parts)
+        base_url = urlparse.urlunparse(url_parts._replace(query=proxied_metadata))
     else:
-        metadata_parts = url_parts._replace(query='f=json')
-    metadata_url = urlparse.urlunparse(metadata_parts)
+        base_url = urlparse.urlunparse(url_parts)
+    metadata_url = base_url + '?f=json'
     resp = requests.get(metadata_url)
 
     if resp.status_code != 200:
@@ -146,7 +146,6 @@ def build_esri_source(name, url):
 
     metadata = resp.json()
 
-    base_url = urlparse.urlunparse(service_parts)
     capabilities = metadata.get('capabilities')
     if service_type == 'ImageServer':
         if 'Image' not in capabilities:
