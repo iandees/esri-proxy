@@ -27,7 +27,6 @@ import mercantile
 import requests
 import uuid
 import urlparse
-import urllib
 
 
 app = Flask(__name__)
@@ -102,7 +101,8 @@ def get_tile(layer, zoom, x, y, fmt):
 
     out_buff = StringIO()
     if fmt in ('jpeg', 'jpg'):
-        composite.save(out_buff, 'jpeg', quality=35)
+        quality = int(app.config.get('JPEG_QUALITY'))
+        composite.save(out_buff, 'jpeg', quality=quality)
         mimetype = 'image/jpeg'
     elif fmt in ('png',):
         composite.save(out_buff, 'png', optimize=True)
