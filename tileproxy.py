@@ -9,6 +9,7 @@ from flask import (
     abort,
     flash,
     jsonify,
+    make_response,
     redirect,
     render_template,
     request,
@@ -109,15 +110,17 @@ def get_tile(layer, zoom, x, y, fmt):
     if fmt in ('jpeg', 'jpg'):
         quality = int(app.config.get('JPEG_QUALITY'))
         composite.save(out_buff, 'jpeg', quality=quality)
-        mimetype = 'image/jpeg'
+        content_type = 'image/jpeg'
     elif fmt in ('png',):
         composite.save(out_buff, 'png', optimize=True)
-        mimetype = 'image/png'
+        content_type = 'image/png'
     else:
         abort(404, 'Unknown format specified')
     out_buff.seek(0)
 
-    return send_file(out_buff, mimetype=mimetype)
+    resp = make_response(out_buff.read())
+    resp.headers['Content-Type'] = content_type
+    return resp
 
 
 def scale_to_zoom(scale):
