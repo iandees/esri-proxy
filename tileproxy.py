@@ -57,6 +57,8 @@ class NewEsriSourceForm(FlaskForm):
 @cache.cached(300)
 def get_tile(layer, zoom, x, y, fmt):
     (min_lon, min_lat, max_lon, max_lat) = mercantile.bounds(x, y, zoom)
+    (min_x, min_y) = mercantile.xy(min_lon, min_lat)
+    (max_x, max_y) = mercantile.xy(max_lon, max_lat)
 
     sources = Source.query.options(load_only(Source.url_template)).filter(
         Source.min_zoom <= zoom,
@@ -84,10 +86,14 @@ def get_tile(layer, zoom, x, y, fmt):
     composite = Image.new('RGBA', (256, 256))
     for source in sources:
         url = source.url_template.format(
-            xmin=min_lon,
-            ymin=min_lat,
-            xmax=max_lon,
-            ymax=max_lat,
+            min_lon=min_lon,
+            min_lat=min_lat,
+            max_lon=max_lon,
+            max_lat=max_lat,
+            min_x=min_x,
+            min_y=min_y,
+            max_x=max_x,
+            max_y=max_y,
             width=256,
             height=256,
         )
@@ -161,8 +167,8 @@ def build_esri_source(name, url):
         url_template = base_url + '/export'
 
     url_template = url_template + (
-        '?bbox={xmin},{ymin},{xmax},{ymax}'
-        '&bboxSR=4326&size={width},{height}'
+        '?bbox={min_x},{min_y},{max_x},{max_y}'
+        '&bboxSR=102113&size={width},{height}'
         '&imageSR=102113&transparent=true'
         '&format=png&f=image'
     )
