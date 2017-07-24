@@ -177,10 +177,10 @@ def build_esri_source(name, url):
     )
 
     extent = metadata.get('fullExtent')
-    extent_sr = extent.get('spatialReference')
+    extent_sr = extent.pop('spatialReference')
     proj_params = {
         'f': 'json',
-        'inSR': extent_sr,
+        'inSR': json.dumps(extent_sr),
         'outSR': '4326',
         'geometries': json.dumps({
             'geometryType': 'esriGeometryEnvelope',
@@ -192,7 +192,9 @@ def build_esri_source(name, url):
         raise ValueError("Couldn't project layer bounding box")
 
     if resp.json().get('error'):
-        raise ValueError("Problem projecting bounding box: {}".format(resp.json().get('error')))
+        raise ValueError("Problem projecting bounding box: {}; {}".format(
+            resp.json().get('error'),
+            resp.request.url))
     projected = resp.json()['geometries'][0]
     bbox = ('SRID=4326;POLYGON(({xmin} {ymin}, {xmin} {ymax}, '
             '{xmax} {ymax}, {xmax} {ymin}, {xmin} {ymin}))'.format(
