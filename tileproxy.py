@@ -85,7 +85,9 @@ def get_tile(layer, zoom, x, y, fmt, scale=1):
     if not sources:
         abort(404, 'No sources for that tile')
 
-    composite_shape = (256 * scale, 256 * scale)
+    width = 256 * scale
+    height = 256 * scale
+    composite_shape = (width, height)
     composite = Image.new('RGBA', composite_shape)
     for source in sources:
         url = source.url_template.format(
@@ -97,8 +99,8 @@ def get_tile(layer, zoom, x, y, fmt, scale=1):
             min_y=min_y,
             max_x=max_x,
             max_y=max_y,
-            width=256,
-            height=256,
+            width=width,
+            height=height,
         )
         resp = requests.get(url)
         resp.raise_for_status()

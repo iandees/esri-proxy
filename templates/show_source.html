@@ -21,7 +21,7 @@
                 maxZoom: {{ source.max_zoom }}
             });
         L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
-        var tileProxyLayer = L.tileLayer('/v1/tiles/{{ source.slug }}/{z}/{x}/{y}.png').addTo(map);
+        var tileProxyLayer = L.tileLayer('/v1/tiles/{{ source.slug }}/{z}/{x}/{y}{r}.jpg').addTo(map);
         boundsLayer.on('data:loaded', function() {
             map.fitBounds(boundsLayer.getBounds());
             map.addLayer(boundsLayer);
