@@ -55,8 +55,9 @@ class NewEsriSourceForm(FlaskForm):
 
 
 @app.route('/v1/tiles/<layer>/<int:zoom>/<int:x>/<int:y>.<fmt>')
+@app.route('/v1/tiles/<layer>/<int:zoom>/<int:x>/<int:y>@<int:scale>x.<fmt>')
 @cache.cached(300)
-def get_tile(layer, zoom, x, y, fmt):
+def get_tile(layer, zoom, x, y, fmt, scale=1):
     (min_lon, min_lat, max_lon, max_lat) = mercantile.bounds(x, y, zoom)
     (min_x, min_y) = mercantile.xy(min_lon, min_lat)
     (max_x, max_y) = mercantile.xy(max_lon, max_lat)
@@ -84,7 +85,8 @@ def get_tile(layer, zoom, x, y, fmt):
     if not sources:
         abort(404, 'No sources for that tile')
 
-    composite = Image.new('RGBA', (256, 256))
+    composite_shape = (256 * scale, 256 * scale)
+    composite = Image.new('RGBA', composite_shape)
     for source in sources:
         url = source.url_template.format(
             min_lon=min_lon,
