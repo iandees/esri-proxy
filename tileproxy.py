@@ -265,6 +265,9 @@ def add_source():
         db.session.add(source)
         db.session.commit()
 
+        flash('Your source was added')
+        return redirect(url_for('show_source', slug=source.slug))
+
     return render_template(
         'new_source.html',
         esri_form=esri_form,
