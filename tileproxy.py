@@ -17,7 +17,7 @@ from flask import (
     url_for
 )
 from geoalchemy2 import Geometry
-from geoalchemy2.functions import ST_AsGeoJSON
+import geoalchemy2.functions as geofunc
 from sqlalchemy.orm import load_only
 from PIL import Image
 from cStringIO import StringIO
@@ -262,6 +262,8 @@ def add_source():
 
     if esri_form.validate_on_submit():
         source = build_esri_source(esri_form.name.data, esri_form.url.data)
+        source.vintage = esri_form.vintage
+        source.resolution = esri_form.resolution
         db.session.add(source)
         db.session.commit()
 
@@ -293,18 +295,21 @@ def delete_source(slug):
 @app.route('/sources/<slug>.geojson')
 def show_source_geojson(slug):
     source = Source.query.filter_by(slug=slug).first_or_404()
+    geom_json = json.loads(db.session.scalar(geofunc.ST_AsGeoJSON(source.bbox, 6)))
 
     return jsonify({
         'type': "Feature",
         'id': source.slug,
         'properties': {
             'name': source.name,
+            'vintage': source.vintage,
+            'resolution': source.resolution,
             'slug': source.slug,
             'url_template': source.url_template,
             'min_zoom': source.min_zoom,
             'max_zoom': source.max_zoom,
         },
-        'geometry': ST_AsGeoJSON(source),
+        'geometry': geom_json,
     })
 
 
