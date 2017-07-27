@@ -221,21 +221,13 @@ def build_esri_source(name, url):
     return source
 
 
-@app.route('/sources', methods=['GET', 'POST'])
+@app.route('/sources')
 def show_sources():
-    esri_form = NewEsriSourceForm()
-
-    if esri_form.validate_on_submit():
-        source = build_esri_source(esri_form.name.data, esri_form.url.data)
-        db.session.add(source)
-        db.session.commit()
-
     sources = Source.query.filter()
 
     return render_template(
         'index.html',
         sources=sources,
-        esri_form=esri_form,
     )
 
 
@@ -260,6 +252,21 @@ def show_source(slug):
     return render_template(
         'show_source.html',
         source=source,
+        esri_form=esri_form,
+    )
+
+
+@app.route('/sources/add', methods=['GET', 'POST'])
+def add_source():
+    esri_form = NewEsriSourceForm()
+
+    if esri_form.validate_on_submit():
+        source = build_esri_source(esri_form.name.data, esri_form.url.data)
+        db.session.add(source)
+        db.session.commit()
+
+    return render_template(
+        'new_source.html',
         esri_form=esri_form,
     )
 

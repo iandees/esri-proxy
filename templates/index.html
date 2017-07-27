@@ -1,13 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
     <h1>Sources</h1>
-    <h4>Add a source</h4>
-    <form action="" method="post">
-        {{ esri_form. hidden_tag() }}
-        <p>Name: {{ esri_form.name }}</p>
-        <p>URL: {{ esri_form.url }}</p>
-        <p><input type="submit" value="Add" /></p>
-    </form>
+    <a href="{{ url_for('add_source') }}">Add a source</a>
     {% for source in sources %}
     <div><h4><a href="{{ url_for('show_source', slug=source.slug)}}">{{ source.name }}</a></h4><code>{{ source.url_template }}</code></div>
     {% else %}

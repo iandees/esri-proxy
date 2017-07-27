@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Add a source</h1>
+    <form action="" method="post">
+        {{ esri_form. hidden_tag() }}
+        <p>Name: {{ esri_form.name }}</p>
+        <p>URL: {{ esri_form.url }}</p>
+        <p>Vintage: {{ esri_form.vintage }}</p>
+        <p>Resolution: {{ esri_form.resolution }}</p>
+        <p><input type="submit" value="Add" /></p>
+    </form>
+{% endblock %}
