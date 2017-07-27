@@ -1,8 +1,8 @@
-"""empty message
+"""initial
 
-Revision ID: 98ec05066a1c
-Revises: 
-Create Date: 2017-02-11 17:38:56.298086
+Revision ID: a65e06cd2666
+Revises:
+Create Date: 2017-07-26 21:15:37.500046
 
 """
 from alembic import op
@@ -11,7 +11,7 @@ import geoalchemy2
 
 
 # revision identifiers, used by Alembic.
-revision = '98ec05066a1c'
+revision = 'a65e06cd2666'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -23,6 +23,8 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('slug', sa.String(length=80), nullable=True),
     sa.Column('name', sa.String(length=256), nullable=True),
+    sa.Column('vintage', sa.Date(), nullable=True),
+    sa.Column('resolution', sa.Float(), nullable=True),
     sa.Column('url_template', sa.Text(), nullable=True),
     sa.Column('bbox', geoalchemy2.types.Geometry(geometry_type='POLYGON', srid=4326), nullable=True),
     sa.Column('min_zoom', sa.Integer(), nullable=True),

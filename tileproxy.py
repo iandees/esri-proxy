@@ -17,8 +17,7 @@ from flask import (
     url_for
 )
 from geoalchemy2 import Geometry
-from geoalchemy2.shape import to_shape
-from shapely.geometry import mapping
+from geoalchemy2.functions import ST_AsGeoJSON
 from sqlalchemy.orm import load_only
 from PIL import Image
 from cStringIO import StringIO
@@ -43,6 +42,8 @@ class Source(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     slug = db.Column(db.String(80), index=True, unique=True)
     name = db.Column(db.String(256))
+    vintage = db.Column(db.Date)
+    resolution = db.Column(db.Float)
     url_template = db.Column(db.Text)
     bbox = db.Column(Geometry(geometry_type='POLYGON', srid=4326), index=True)
     min_zoom = db.Column(db.Integer)
@@ -50,7 +51,9 @@ class Source(db.Model):
 
 
 class NewEsriSourceForm(FlaskForm):
-    name = StringField('name', validators=[DataRequired()])
+    name = StringField('Name', validators=[DataRequired()])
+    vintage = StringField('Vintage', validators=[DataRequired()])
+    resolution = StringField('Resolution', validators=[DataRequired()])
     url = StringField('url', validators=[DataRequired()])
 
 
@@ -280,8 +283,6 @@ def delete_source(slug):
 @app.route('/sources/<slug>.geojson')
 def show_source_geojson(slug):
     source = Source.query.filter_by(slug=slug).first_or_404()
-    shape = to_shape(source.bbox)
-    geojson = mapping(shape)
 
     return jsonify({
         'type': "Feature",
@@ -293,7 +294,7 @@ def show_source_geojson(slug):
             'min_zoom': source.min_zoom,
             'max_zoom': source.max_zoom,
         },
-        'geometry': geojson
+        'geometry': ST_AsGeoJSON(source),
     })
 
 
