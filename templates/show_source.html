@@ -5,7 +5,7 @@
     <p>Slug: {{ source.slug }}</p>
     <p>Source URL: {{ source.url_template }}</p>
     <p>Vintage: {{ source.vintage }}</p>
-    <p>Resolution: {{ source.resolution }}</p>
+    <p>Resolution: {{ source.resolution_str }}</p>
     <p>Min zoom: {{ source.min_zoom }}, Max zoom: {{ source.max_zoom }}</p>
     <p>JOSM url template: <code>tms[{{ source.min_zoom }},{{ source.max_zoom }}]:{{ url_for('get_tile', layer=source.slug, zoom=555, x=444, y=333, fmt='png', _external=True).replace('555', '{zoom}').replace('444', '{x}').replace('333', '{y}') }}</code></p>
     <p>iD url template: <code>{{ url_for('get_tile', layer=source.slug, zoom=555, x=444, y=333, fmt='png', _external=True).replace('555', '{zoom}').replace('444', '{x}').replace('333', '{y}') }}</code></p>
@@ -22,8 +22,10 @@
                 },
                 maxZoom: {{ source.max_zoom }}
             });
-        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
-        var tileProxyLayer = L.tileLayer('/v1/tiles/{{ source.slug }}/{z}/{x}/{y}{r}.jpg').addTo(map);
+
+        var tileProxyLayer = L.tileLayer('/v1/tiles/{{ source.slug }}/{z}/{x}/{y}{r}.png').addTo(map);
+        var labelsLayer = L.tileLayer('http://{s}.tile.stamen.com/toner-hybrid/{z}/{x}/{y}{r}.png').addTo(map);
+
         boundsLayer.on('data:loaded', function() {
             map.fitBounds(boundsLayer.getBounds());
             map.addLayer(boundsLayer);

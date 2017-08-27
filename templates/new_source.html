@@ -1,12 +1,17 @@
+{% from "_formhelpers.html" import render_field %}
+
 {% extends "base.html" %}
 {% block content %}
     <h1>Add a source</h1>
     <form action="" method="post">
-        {{ esri_form. hidden_tag() }}
-        <p>Name: {{ esri_form.name }}</p>
-        <p>URL: {{ esri_form.url }}</p>
-        <p>Vintage: {{ esri_form.vintage }}</p>
-        <p>Resolution: {{ esri_form.resolution }}</p>
-        <p><input type="submit" value="Add" /></p>
+        <dl>
+            {{ esri_form.hidden_tag() }}
+            {{ render_field(esri_form.name) }}
+            {{ render_field(esri_form.url) }}
+            {{ render_field(esri_form.vintage) }}
+            {{ render_field(esri_form.resolution) }}
+            {{ render_field(esri_form.resolution_unit) }}
+            <input type="submit" value="Add">
+        </dl>
     </form>
 {% endblock %}

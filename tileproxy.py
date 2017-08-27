@@ -2,7 +2,7 @@ from flask_caching import Cache
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
-from wtforms import StringField
+from wtforms import SelectField, StringField
 from wtforms.validators import DataRequired
 from flask import (
     Flask,
@@ -43,18 +43,38 @@ class Source(db.Model):
     slug = db.Column(db.String(80), index=True, unique=True)
     name = db.Column(db.String(256))
     vintage = db.Column(db.Date)
-    resolution = db.Column(db.Float)
+    resolution = db.Column(db.Numeric(5, 2))
+    resolution_unit = db.Column(db.String(12))
+    resolution_meters = db.Column(db.Numeric(5, 2))
     url_template = db.Column(db.Text)
     bbox = db.Column(Geometry(geometry_type='POLYGON', srid=4326), index=True)
     min_zoom = db.Column(db.Integer)
     max_zoom = db.Column(db.Integer)
 
+    @property
+    def resolution_str(self):
+        if self.resolution:
+            return u"{}{}".format(
+                self.resolution,
+                self.resolution_unit,
+            )
+        else:
+            return u"unknown"
+
 
 class NewEsriSourceForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
-    vintage = StringField('Vintage', validators=[DataRequired()])
-    resolution = StringField('Resolution', validators=[DataRequired()])
     url = StringField('url', validators=[DataRequired()])
+    vintage = StringField('Vintage')
+    resolution = StringField('Resolution')
+    resolution_unit = SelectField(
+        choices=[
+            ('cm', 'cm/pixel'),
+            ('m', 'm/pixel'),
+            ('in', 'in/pixel'),
+            ('ft', 'feet/pixel'),
+        ]
+    )
 
 
 @app.route('/v1/tiles/<layer>/<int:zoom>/<int:x>/<int:y>.<fmt>')
@@ -164,16 +184,9 @@ def build_esri_source(name, url):
 
     metadata = resp.json()
 
-    capabilities = metadata.get('capabilities')
     if service_type == 'ImageServer':
-        if 'Image' not in capabilities:
-            raise ValueError("The layer doesn't seem to support image export")
-
         url_template = base_url + '/exportImage'
     elif service_type == 'MapServer':
-        if 'Map' not in capabilities:
-            raise ValueError("The layer doesn't seem to support map export")
-
         url_template = base_url + '/export'
 
     url_template = url_template + (
@@ -183,7 +196,7 @@ def build_esri_source(name, url):
         '&format=png&f=image'
     )
 
-    extent = metadata.get('fullExtent')
+    extent = metadata.get('fullExtent') or metadata.get('extent')
     extent_sr = extent.pop('spatialReference')
     proj_params = {
         'f': 'json',
@@ -256,14 +269,35 @@ def show_source(slug):
     )
 
 
+def normalize_resolution(res, res_unit):
+    if res_unit == 'm':
+        return res
+    elif res_unit == 'cm':
+        return res / 100.0
+    elif res_unit == 'in':
+        return res / 0.0254
+    elif res_unit == 'ft':
+        return res / 0.3048
+    else:
+        raise TypeError("Unknown resolution unit")
+
+
 @app.route('/sources/add', methods=['GET', 'POST'])
 def add_source():
     esri_form = NewEsriSourceForm()
 
     if esri_form.validate_on_submit():
         source = build_esri_source(esri_form.name.data, esri_form.url.data)
-        source.vintage = esri_form.vintage
-        source.resolution = esri_form.resolution
+        source.vintage = esri_form.vintage.data
+
+        if esri_form.resolution.data:
+            source.resolution = esri_form.resolution.data
+            source.resolution_unit = esri_form.resolution_unit.data
+            source.resolution_meters = normalize_resolution(
+                float(source.resolution),
+                source.resolution_unit
+            )
+
         db.session.add(source)
         db.session.commit()
 
@@ -303,7 +337,10 @@ def show_source_geojson(slug):
         'properties': {
             'name': source.name,
             'vintage': source.vintage,
-            'resolution': source.resolution,
+            'resolution': '{}{}'.format(
+                source.resolution,
+                source.resolution_unit,
+            ),
             'slug': source.slug,
             'url_template': source.url_template,
             'min_zoom': source.min_zoom,
