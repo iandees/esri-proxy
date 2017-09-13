@@ -157,15 +157,20 @@ def scale_to_zoom(scale):
     return int(round(-1.443 * math.log(scale) + 29.14))
 
 
-def build_esri_source(name, url):
-    url_parts = urlparse.urlparse(url)
+def parse_base_url(user_url):
+    url_parts = urlparse.urlparse(user_url)
     query_url_parts = urlparse.urlparse(url_parts.query)
     proxy_parts = None
+    token = None
     if query_url_parts.scheme:
         service_parts = query_url_parts
         proxy_parts = url_parts
     else:
         service_parts = url_parts
+
+        qs = urlparse.parse_qs(service_parts.query)
+        if qs and qs.get('token'):
+            token = qs.get('token')[0]
 
     service_type = service_parts.path.rstrip('/').rsplit('/', 1)[-1]
     if service_type not in ('MapServer', 'ImageServer'):
@@ -175,28 +180,44 @@ def build_esri_source(name, url):
         proxied_metadata = urlparse.urlunparse(service_parts)
         base_url = urlparse.urlunparse(url_parts._replace(query=proxied_metadata))
     else:
-        base_url = urlparse.urlunparse(url_parts)
-    metadata_url = base_url + '?f=json'
-    resp = requests.get(metadata_url)
+        base_url = urlparse.urlunparse(url_parts._replace(query=None))
 
-    if resp.status_code != 200:
-        raise ValueError("Error retrieving layer metadata from " + resp.request.url)
+    return service_type, base_url, token
 
-    metadata = resp.json()
+
+def build_metadata_url(user_url):
+    service_type, base_url, token = parse_base_url(user_url)
+
+    query_part = '?f=json'
+
+    if token:
+        query_part += '&token=' + token
+
+    return base_url + query_part
+
+
+def build_url_template(user_url):
+    service_type, base_url, token = parse_base_url(user_url)
 
     if service_type == 'ImageServer':
         url_template = base_url + '/exportImage'
     elif service_type == 'MapServer':
         url_template = base_url + '/export'
 
-    url_template = url_template + (
+    query_part = (
         '?bbox={min_x},{min_y},{max_x},{max_y}'
         '&bboxSR=102113&size={width},{height}'
         '&imageSR=102113&transparent=true'
         '&format=png&f=image'
     )
 
-    extent = metadata.get('fullExtent') or metadata.get('extent')
+    if token:
+        query_part += '&token=' + token
+
+    return url_template + query_part
+
+
+def project(extent):
     extent_sr = extent.pop('spatialReference')
     proj_params = {
         'f': 'json',
@@ -215,7 +236,23 @@ def build_esri_source(name, url):
         raise ValueError("Problem projecting bounding box: {}; {}".format(
             resp.json().get('error'),
             resp.request.url))
-    projected = resp.json()['geometries'][0]
+
+    return resp.json()['geometries'][0]
+
+
+def build_esri_source(name, url):
+    metadata_url = build_metadata_url(url)
+    url_template = build_url_template(url)
+
+    resp = requests.get(metadata_url)
+
+    if resp.status_code != 200:
+        raise ValueError("Error retrieving layer metadata from " + resp.request.url)
+
+    metadata = resp.json()
+    extent = metadata.get('fullExtent') or metadata.get('extent')
+    projected = project(extent)
+
     bbox = ('SRID=4326;POLYGON(({xmin} {ymin}, {xmin} {ymax}, '
             '{xmax} {ymax}, {xmax} {ymin}, {xmin} {ymin}))'.format(
                 **projected
